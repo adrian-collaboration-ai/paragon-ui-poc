@@ -52,16 +52,24 @@ apiClient.interceptors.response.use(
 
 /**
  * Get JWT token for Paragon authentication
- * POST /paragon/token
+ * POST /api/v1/paragon/token
  */
 export const getParagonAuthToken = async (): Promise<{ token: string }> => {
   try {
+    console.log('Making API call to get Paragon auth token...');
     const response: AxiosResponse<{ token: string }> = await apiClient.post(
-      '/paragon/token'
+      '/api/v1/paragon/token'
     );
+
+    console.log('Received token response:', {
+      hasToken: !!response.data.token,
+      tokenLength: response.data.token?.length,
+      tokenPreview: response.data.token?.substring(0, 50) + '...'
+    });
 
     return response.data;
   } catch (error) {
+    console.error('API call failed:', error);
     const message = error instanceof Error ? error.message : 'Failed to get auth token';
     throw new Error(`Authentication failed: ${message}`);
   }

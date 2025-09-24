@@ -50,7 +50,7 @@ describe('API Service', () => {
 
       const result = await getParagonAuthToken();
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/paragon/token');
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/v1/paragon/token');
       expect(result).toEqual(mockResponse.data);
     });
 

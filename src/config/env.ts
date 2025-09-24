@@ -11,7 +11,7 @@ export const PARAGON_PROJECT_KEY = import.meta.env.VITE_PARAGON_PROJECT_KEY;
 const rawParagonHost = import.meta.env.VITE_PARAGON_HOST;
 export const PARAGON_HOST = rawParagonHost?.replace(/^https?:\/\//, '') || '';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8888';
 
 // Validation function to ensure all required environment variables are set
 export const validateEnvironment = (): string[] => {
