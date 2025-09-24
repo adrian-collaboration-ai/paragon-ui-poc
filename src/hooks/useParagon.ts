@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { paragon } from '@useparagon/connect';
 import type { ParagonAuthConfig } from '../types';
-import { PARAGON_HOST, PARAGON_PROJECT_KEY } from '../config/env';
+import { PARAGON_HOST } from '../config/env';
 import { getParagonAuthToken } from '../services/api';
 
 /**

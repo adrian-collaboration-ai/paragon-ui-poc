@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { IntegrationsPage } from './components/IntegrationsPage';
 import { validateEnvironment } from './config/env';
-import { Alert } from './components/ui/Alert';
+import { Alert, AlertTitle, AlertDescription } from './components/ui/alert';
 import './App.css'
 
 function App() {
@@ -20,16 +20,16 @@ function App() {
 
   if (envError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <Alert variant="error">
-            <div>
-              <h3 className="font-semibold mb-2">Configuration Error</h3>
-              <p className="text-sm">{envError}</p>
-              <p className="text-sm mt-2">
-                Copy <code>.env.example</code> to <code>.env</code> and fill in your API keys.
+          <Alert variant="destructive">
+            <AlertTitle>Configuration Error</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p>{envError}</p>
+              <p>
+                Copy <code className="bg-muted px-1 py-0.5 rounded text-xs">.env.example</code> to <code className="bg-muted px-1 py-0.5 rounded text-xs">.env</code> and fill in your API keys.
               </p>
-            </div>
+            </AlertDescription>
           </Alert>
         </div>
       </div>
