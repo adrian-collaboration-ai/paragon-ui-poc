@@ -1,42 +1,78 @@
-import React, { useEffect } from 'react';
-import { IntegrationsPage } from './components/IntegrationsPage';
-import { validateEnvironment } from './config/env';
-import { Alert, AlertTitle, AlertDescription } from './components/ui/alert';
-import './App.css'
+import { Header } from '@/components/layout/header';
+import { paragon } from '@useparagon/connect';
+import { useQuery } from '@tanstack/react-query';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-function App() {
-  const [envError, setEnvError] = React.useState<string | null>(null);
+import { getAppConfig } from '@/lib/config';
+import { ThemeProvider } from '@/lib/themes/theme-provider';
+import { IntegrationList } from '@/components/feature/integration/integration-list';
+import { IntegrationCard } from '@/components/feature/integration/integration-card';
+import { ErrorCard } from '@/components/ui/error-card';
+import { GoogleDriveManager } from '@/components/pages/google-drive-manager';
 
-  useEffect(() => {
-    // Validate environment variables on app start
-    const missingVars = validateEnvironment();
-    if (missingVars.length > 0) {
-      setEnvError(
-        `Missing required environment variables: ${missingVars.join(', ')}. 
-         Please check your .env file and ensure all variables from .env.example are configured.`
-      );
-    }
-  }, []);
+export function App() {
+  return (
+    <ThemeProvider defaultTheme="dark">
+      <Router>
+        <div>
+          <Header />
+          <Routes>
+            <Route path="/" element={
+              <div className="container mx-auto py-4 px-8">
+                <AuthenticatedApp />
+              </div>
+            } />
+            <Route path="/google-drive" element={<GoogleDriveManager />} />
+          </Routes>
+        </div>
+      </Router>
+    </ThemeProvider>
+  );
+}
 
-  if (envError) {
+async function authenticate() {
+  const config = getAppConfig();
+
+  if (!config.success) {
+    throw config.error;
+  }
+
+  await paragon.authenticate(
+    config.data.VITE_PARAGON_PROJECT_ID,
+    config.data.VITE_PARAGON_JWT_TOKEN,
+  );
+  paragon.setHeadless(true);
+
+  return null;
+}
+
+function AuthenticatedApp() {
+  const {
+    isLoading,
+    error,
+    refetch: reauthenticate,
+  } = useQuery({
+    queryKey: ['authentication'],
+    queryFn: authenticate,
+  });
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <Alert variant="destructive">
-            <AlertTitle>Configuration Error</AlertTitle>
-            <AlertDescription className="space-y-2">
-              <p>{envError}</p>
-              <p>
-                Copy <code className="bg-muted px-1 py-0.5 rounded text-xs">.env.example</code> to <code className="bg-muted px-1 py-0.5 rounded text-xs">.env</code> and fill in your API keys.
-              </p>
-            </AlertDescription>
-          </Alert>
+      <div>
+        <h2 className="text-xl font-medium mb-4">Integrations</h2>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+          <IntegrationCard.Skeleton />
+          <IntegrationCard.Skeleton />
+          <IntegrationCard.Skeleton />
+          <IntegrationCard.Skeleton />
         </div>
       </div>
     );
   }
 
-  return <IntegrationsPage />;
-}
+  if (error) {
+    return <ErrorCard error={error} onRetry={reauthenticate} />;
+  }
 
-export default App
+  return <IntegrationList />;
+}
