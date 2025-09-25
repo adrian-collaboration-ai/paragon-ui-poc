@@ -9,13 +9,24 @@ Headless mode still provides fully managed authentication, so you don’t need t
 
 To use the features of this demo, you will need a Paragon account. [Start for free](https://dashboard.useparagon.com/signup) today
 
-1. Duplicate or rename the `.env-example` to `.env`
-2. Paste in your Project ID and a JWT token into the values of `.env`, at the root of the repository. For quick token generation, you can use our [Paragon JWT Generator](https://jwt.useparagon.com/).
+1. Create a `.env` file at the root of the repository
+2. Configure the following environment variables:
 
 ```
-VITE_PARAGON_PROJECT_ID=""
-VITE_PARAGON_JWT_TOKEN=""
+VITE_PARAGON_PROJECT_ID="your-paragon-project-id"
+VITE_API_BASE_URL="http://localhost:8888"
+VITE_GOOGLE_API_KEY="your-google-api-key" # Optional
+VITE_GOOGLE_APP_ID="your-google-app-id"   # Optional
 ```
+
+**Note**: This application now uses dynamic JWT token generation from your backend instead of static tokens. Make sure your backend is running and accessible at the configured `VITE_API_BASE_URL`.
+
+### Backend Requirements
+
+Your backend should provide the following endpoints:
+
+- `POST /api/v1/paragon/token` - Generate JWT tokens
+- `POST /api/v1/webhooks/paragon/sync` - Configure folder syncs
 
 ## Installation
 

@@ -40,7 +40,7 @@ async function authenticate() {
 
   // Generate token dynamically from backend
   const paragonService = new ParagonService(config.data.VITE_API_BASE_URL);
-  const token = await paragonService.generateToken("user-id-dinamico");
+  const token = await paragonService.generateToken(config.data.VITE_PARAGON_USER_ID);
 
   await paragon.authenticate(
     config.data.VITE_PARAGON_PROJECT_ID,
