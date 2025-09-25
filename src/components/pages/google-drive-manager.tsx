@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { paragon } from '@useparagon/connect';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FolderIcon, FileIcon, DownloadIcon, AlertCircleIcon, ListIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
+import { FolderIcon, FileIcon, DownloadIcon, AlertCircleIcon, ListIcon, EyeIcon, EyeOffIcon, RefreshCwIcon } from 'lucide-react';
 import { FileManager } from '@cubone/react-file-manager';
+import { ParagonService } from '@/lib/paragon-service';
+import { getAppConfig } from '@/lib/config';
 import '@cubone/react-file-manager/dist/style.css';
 
 interface SelectedFile {
@@ -45,6 +47,8 @@ export function GoogleDriveManager() {
   const [fileManagerItems, setFileManagerItems] = useState<FileManagerItem[]>([]);
   const [showFileManager, setShowFileManager] = useState(false);
   const [originalGoogleDriveFiles, setOriginalGoogleDriveFiles] = useState<GoogleDriveFile[]>([]);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [isConfiguringSync, setIsConfiguringSync] = useState(false);
 
   const buildFilePath = (file: GoogleDriveFile, allFiles: GoogleDriveFile[]): string => {
     // Función recursiva para construir el path completo
@@ -202,6 +206,35 @@ export function GoogleDriveManager() {
     return <FileIcon className="h-5 w-5 text-gray-500" />;
   };
 
+  const configureFolderSync = async (folderId: string) => {
+    try {
+      setIsConfiguringSync(true);
+      setSyncStatus(null);
+      setError(null);
+
+      const config = getAppConfig();
+      if (!config.success) {
+        throw new Error('Configuration error');
+      }
+
+      const paragonService = new ParagonService(config.data.VITE_API_BASE_URL);
+      const result = await paragonService.configureSync({
+        workspaceId: "uuid-workspace",
+        userId: "user-id",
+        integrationId: "google-drive-integration",
+        folderId: folderId,
+        webhookUrl: `${config.data.VITE_API_BASE_URL}/api/v1/webhooks/paragon/files`
+      });
+      
+      setSyncStatus(`Sync configured: ${result.syncId}`);
+    } catch (err) {
+      console.error('Error configuring sync:', err);
+      setError(err instanceof Error ? err.message : 'Failed to configure sync');
+    } finally {
+      setIsConfiguringSync(false);
+    }
+  };
+
   return (
     <div className="container mx-auto py-6 px-8">
       <div className="mb-6">
@@ -262,9 +295,29 @@ export function GoogleDriveManager() {
             </div>
           )}
 
+          {syncStatus && (
+            <div className="flex items-center gap-2 p-3 text-sm bg-green-50 border border-green-200 rounded-md text-green-800">
+              <RefreshCwIcon className="h-4 w-4" />
+              {syncStatus}
+            </div>
+          )}
+
           {selectedFiles.length > 0 && (
             <div className="space-y-2">
-              <h4 className="font-medium text-sm">Selected Files:</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-sm">Selected Files:</h4>
+                {selectedFiles.some(f => f.mimeType.includes('folder')) && (
+                  <Button 
+                    onClick={() => configureFolderSync(selectedFiles.find(f => f.mimeType.includes('folder'))!.id)}
+                    disabled={isConfiguringSync}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <RefreshCwIcon className="h-4 w-4 mr-2" />
+                    {isConfiguringSync ? 'Configuring...' : 'Configure Folder Sync'}
+                  </Button>
+                )}
+              </div>
               <div className="space-y-2">
                 {selectedFiles.map((file) => (
                   <div

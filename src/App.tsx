@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import { getAppConfig } from '@/lib/config';
+import { ParagonService } from '@/lib/paragon-service';
 import { ThemeProvider } from '@/lib/themes/theme-provider';
 import { IntegrationList } from '@/components/feature/integration/integration-list';
 import { IntegrationCard } from '@/components/feature/integration/integration-card';
@@ -37,9 +38,13 @@ async function authenticate() {
     throw config.error;
   }
 
+  // Generate token dynamically from backend
+  const paragonService = new ParagonService(config.data.VITE_API_BASE_URL);
+  const token = await paragonService.generateToken("user-id-dinamico");
+
   await paragon.authenticate(
     config.data.VITE_PARAGON_PROJECT_ID,
-    config.data.VITE_PARAGON_JWT_TOKEN,
+    token,
   );
   paragon.setHeadless(true);
 
