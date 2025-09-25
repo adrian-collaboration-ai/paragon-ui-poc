@@ -14,9 +14,10 @@ interface SelectedFile {
 
 interface GoogleDriveFilePickerProps {
   onFileSelect?: (files: SelectedFile[]) => void;
+  onCloseModal?: () => void;
 }
 
-export function GoogleDriveFilePicker({ onFileSelect }: GoogleDriveFilePickerProps) {
+export function GoogleDriveFilePicker({ onFileSelect, onCloseModal }: GoogleDriveFilePickerProps) {
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +26,9 @@ export function GoogleDriveFilePicker({ onFileSelect }: GoogleDriveFilePickerPro
     try {
       setIsLoading(true);
       setError(null);
+      
+      // Close the modal when opening file picker
+      onCloseModal?.();
 
       // Get environment variables
       const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
@@ -43,7 +47,13 @@ export function GoogleDriveFilePicker({ onFileSelect }: GoogleDriveFilePickerPro
           const fileArray = Array.isArray(files) ? files : [];
           
           // Transform the files to our expected format
-          const transformedFiles: SelectedFile[] = fileArray.map((file: any) => ({
+          const transformedFiles: SelectedFile[] = fileArray.map((file: {
+            id: string;
+            name: string;
+            mimeType: string;
+            sizeBytes?: string;
+            thumbnailUrl?: string;
+          }) => ({
             id: file.id,
             name: file.name,
             mimeType: file.mimeType,

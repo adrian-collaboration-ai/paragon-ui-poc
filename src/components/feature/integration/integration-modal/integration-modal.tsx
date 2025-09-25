@@ -206,6 +206,7 @@ export function IntegrationModal(props: Props) {
                       onFileSelect={(files) => {
                         console.log('Files selected from Google Drive:', files);
                       }}
+                      onCloseModal={() => props.onOpenChange(false)}
                     />
                   )}
                 </div>
