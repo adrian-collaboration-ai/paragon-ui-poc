@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { paragon } from '@useparagon/connect';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FolderIcon, FileIcon, DownloadIcon, AlertCircleIcon } from 'lucide-react';
+import { FolderIcon, FileIcon, DownloadIcon, AlertCircleIcon, SendIcon } from 'lucide-react';
+import { ParagonService } from '@/lib/paragon-service';
+import { getAppConfig } from '@/lib/config';
 
 interface SelectedFile {
   id: string;
@@ -153,6 +155,76 @@ export function GoogleDriveFilePicker({ onFileSelect, onCloseModal }: GoogleDriv
     }
   };
 
+  const sendFileToIngestion = async (file: SelectedFile) => {
+    try {
+      setError(null);
+      
+      const config = getAppConfig();
+      if (!config.success) {
+        throw new Error('Configuration error: Unable to get app config');
+      }
+
+      const paragonService = new ParagonService(config.data.VITE_API_BASE_URL);
+      
+      // First, get the file content from Google Drive
+      const isGoogleWorkspaceFile = file.mimeType.includes('application/vnd.google-apps');
+      
+      let endpoint: string;
+      let actualMimeType = file.mimeType;
+      
+      if (isGoogleWorkspaceFile) {
+        // For Google Workspace files, use export endpoint
+        let exportMimeType = 'application/pdf';
+        if (file.mimeType.includes('spreadsheet')) {
+          exportMimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        } else if (file.mimeType.includes('presentation')) {
+          exportMimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+        } else if (file.mimeType.includes('document')) {
+          exportMimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        }
+        
+        endpoint = `/files/${file.id}/export?mimeType=${encodeURIComponent(exportMimeType)}`;
+        actualMimeType = exportMimeType;
+      } else {
+        // For regular files, use the get endpoint with alt=media
+        endpoint = `/files/${file.id}?alt=media`;
+      }
+
+      const response = await paragon.request('googledrive', endpoint, {
+        method: 'GET',
+        headers: {},
+        body: undefined
+      });
+
+      // Convert response to File object
+      const blob = new Blob([response as BlobPart], { type: actualMimeType });
+      const fileToSend = new File([blob], file.name, { type: actualMimeType });
+
+      // Send to nos-ingestion-service
+      const ingestRequest = {
+        workspaceId: 'default-workspace', // You may want to make this configurable
+        userId: config.data.VITE_PARAGON_USER_ID,
+        artifactType: 'DOCUMENT',
+        metadata: {
+          source: 'google-drive',
+          originalId: file.id,
+          originalMimeType: file.mimeType
+        },
+        tags: ['google-drive', 'paragon'],
+        processingIntent: 'PROCESS'
+      };
+
+      const ingestResponse = await paragonService.ingestFile(fileToSend, ingestRequest);
+      
+      console.log('File sent to ingestion service:', ingestResponse);
+      // You might want to show a success message to the user here
+      
+    } catch (err) {
+      console.error('Error sending file to ingestion service:', err);
+      setError(`Failed to send ${file.name} to ingestion service`);
+    }
+  };
+
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return 'Unknown size';
     
@@ -215,14 +287,22 @@ export function GoogleDriveFilePicker({ onFileSelect, onCloseModal }: GoogleDriv
                       </p>
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => downloadFile(file)}
-                    className="ml-2"
-                  >
-                    <DownloadIcon className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2 ml-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => downloadFile(file)}
+                    >
+                      <DownloadIcon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => sendFileToIngestion(file)}
+                    >
+                      <SendIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

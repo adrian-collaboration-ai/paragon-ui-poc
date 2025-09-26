@@ -16,6 +16,24 @@ export interface GenerateTokenResponse {
   token: string;
 }
 
+export interface IngestFileRequest {
+  workspaceId: string;
+  userId: string;
+  artifactType?: string;
+  metadata?: Record<string, string | number | boolean>;
+  tags?: string[];
+  processingIntent?: string;
+}
+
+export interface IngestFileResponse {
+  artifactId: string;
+  filename: string;
+  mimeType: string;
+  fileSize: number;
+  processingStatus: string;
+  createdAt: string;
+}
+
 export class ParagonService {
   constructor(private baseUrl: string) {}
 
@@ -59,6 +77,29 @@ export class ParagonService {
       return data;
     } catch (error) {
       console.error('Error configuring Paragon sync:', error);
+      throw error;
+    }
+  }
+
+  async ingestFile(file: File, request: IngestFileRequest): Promise<IngestFileResponse> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('request', JSON.stringify(request));
+
+      const response = await fetch(`${this.baseUrl}/api/v1/ingest`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ingest file: ${response.status} ${response.statusText}`);
+      }
+
+      const data: IngestFileResponse = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error ingesting file:', error);
       throw error;
     }
   }
