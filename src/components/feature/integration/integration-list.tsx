@@ -7,7 +7,6 @@ import {
 } from '@useparagon/connect';
 
 import { IntegrationCard } from './integration-card';
-import { GoogleDriveFilePicker } from './google-drive-file-picker';
 import { useEffect, useState } from 'react';
 
 interface SelectedFile {
@@ -86,12 +85,6 @@ export function IntegrationList() {
         </ul>
       </div>
       
-      <div>
-        <GoogleDriveFilePicker 
-          onFileSelect={handleFileSelect}
-          onCloseModal={() => console.log('Modal closed')} 
-        />
-      </div>
     </div>
   );
 }

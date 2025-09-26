@@ -4,6 +4,7 @@ export interface ConfigureSyncRequest {
   integrationId: string;
   folderId: string;
   webhookUrl: string;
+  userToken: string;
 }
 
 export interface ConfigureSyncResponse {
@@ -61,6 +62,8 @@ export class ParagonService {
 
   async configureSync(request: ConfigureSyncRequest): Promise<ConfigureSyncResponse> {
     try {
+      console.log('Configuring sync with payload:', JSON.stringify(request, null, 2));
+      
       const response = await fetch(`${this.baseUrl}/api/v1/webhooks/paragon/sync`, {
         method: 'POST',
         headers: {
@@ -70,10 +73,17 @@ export class ParagonService {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to configure sync: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('Sync configuration failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`Failed to configure sync: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const data: ConfigureSyncResponse = await response.json();
+      console.log('Sync configuration successful:', data);
       return data;
     } catch (error) {
       console.error('Error configuring Paragon sync:', error);

@@ -47,7 +47,7 @@ export function Header() {
             >
               <Link to="/google-drive">
                 <FolderIcon className="h-4 w-4 mr-2" />
-                Google Drive
+                Custom File Manager
               </Link>
             </Button>
           </nav>
