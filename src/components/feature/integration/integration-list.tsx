@@ -7,7 +7,19 @@ import {
 } from '@useparagon/connect';
 
 import { IntegrationCard } from './integration-card';
-import { useEffect } from 'react';
+import { GoogleDriveFilePicker } from './google-drive-file-picker';
+import { useEffect, useState } from 'react';
+
+interface SelectedFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  size?: number;
+  thumbnailUrl?: string;
+  isShared?: boolean;
+  type?: string;
+  url?: string;
+}
 
 export function IntegrationList() {
   const { data: user, refetch: refetchUser } = useAuthenticatedUser();
@@ -16,6 +28,11 @@ export function IntegrationList() {
     isLoading: isLoadingIntegrations,
     refetch: refetchIntegrations,
   } = useIntegrationMetadata();
+  
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
+
+  // Debug log to see current state
+  console.log('Current selectedFiles state:', selectedFiles);
 
   useEffect(() => {
     const updateUser = () => {
@@ -37,6 +54,11 @@ export function IntegrationList() {
   }
 
   const sortedIntegrations = integrations.sort(byEnabledOnTop(user));
+
+  const handleFileSelect = (files: SelectedFile[]) => {
+    console.log('Files received in IntegrationList:', files);
+    setSelectedFiles(files);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,6 +84,13 @@ export function IntegrationList() {
             );
           })}
         </ul>
+      </div>
+      
+      <div>
+        <GoogleDriveFilePicker 
+          onFileSelect={handleFileSelect}
+          onCloseModal={() => console.log('Modal closed')} 
+        />
       </div>
     </div>
   );

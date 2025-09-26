@@ -40,26 +40,47 @@ export function GoogleDriveFilePicker({ onFileSelect, onCloseModal }: GoogleDriv
 
       // Initialize the file picker
       const picker = new paragon.ExternalFilePicker("googledrive", {
+        allowedTypes: ["application/pdf"],
+        allowMultiSelect: true,
         onFileSelect: (files: unknown) => {
           console.log('Files selected:', files);
+          // Handle the Paragon response structure: {viewToken: Array, docs: Array}
+          let fileArray: unknown[] = [];
+          if (files && typeof files === 'object' && 'docs' in files) {
+            const paragonResponse = files as { docs?: unknown[] };
+            fileArray = Array.isArray(paragonResponse.docs) ? paragonResponse.docs : [];
+          } else if (Array.isArray(files)) {
+            fileArray = files;
+          }
           
-          // Ensure files is an array
-          const fileArray = Array.isArray(files) ? files : [];
+          console.log('Extracted file array:', fileArray);
           
           // Transform the files to our expected format
-          const transformedFiles: SelectedFile[] = fileArray.map((file: {
-            id: string;
-            name: string;
-            mimeType: string;
-            sizeBytes?: string;
-            thumbnailUrl?: string;
-          }) => ({
-            id: file.id,
-            name: file.name,
-            mimeType: file.mimeType,
-            size: file.sizeBytes ? parseInt(file.sizeBytes) : undefined,
-            thumbnailUrl: file.thumbnailUrl,
-          }));
+          const transformedFiles: SelectedFile[] = fileArray.map((fileData: unknown) => {
+            const file = fileData as {
+              id: string;
+              name: string;
+              mimeType: string;
+              sizeBytes?: string;
+              thumbnailUrl?: string;
+              isShared?: boolean;
+              type?: string;
+              url?: string;
+            };
+            
+            return {
+              id: file.id,
+              name: file.name,
+              mimeType: file.mimeType,
+              size: file.sizeBytes ? parseInt(file.sizeBytes) : undefined,
+              thumbnailUrl: file.thumbnailUrl,
+              isShared: file.isShared,
+              type: file.type,
+              url: file.url,
+            };
+          });
+          
+          console.log('Transformed files:', transformedFiles);
           
           setSelectedFiles(transformedFiles);
           onFileSelect?.(transformedFiles);
@@ -111,8 +132,8 @@ export function GoogleDriveFilePicker({ onFileSelect, onCloseModal }: GoogleDriv
 
       const response = await paragon.request('googledrive', endpoint, {
         method: 'GET',
-        body: null,
-        headers: {}
+        headers: {},
+        body: undefined
       });
 
       // Create download link
