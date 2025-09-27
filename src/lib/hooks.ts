@@ -198,18 +198,14 @@ export function useParagonSync() {
       if (currentSyncs.length === 0) return;
 
       try {
-        const config = getAppConfig();
-        if (!config.success) return;
-
-        const paragonService = new ParagonService(config.data.VITE_API_BASE_URL);
-
-        // Poll status for all active syncs
+        // Poll status for all active syncs using the dedicated Paragon Sync API
+        // https://docs.useparagon.com/managed-sync/api/get-sync-status
         const statusPromises = currentSyncs.map(async (sync) => {
           const userToken = currentTokens[sync.syncId];
           if (!userToken) return null;
 
           try {
-            const statusResponse = await paragonService.getSyncStatus(sync.syncId, userToken);
+            const statusResponse = await ParagonService.getSyncStatus(sync.syncId, userToken);
             return {
               syncId: sync.syncId,
               status: statusResponse.status,

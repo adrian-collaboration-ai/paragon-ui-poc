@@ -101,10 +101,13 @@ export class ParagonService {
     }
   }
 
-  async getSyncStatus(syncId: string, userToken: string): Promise<SyncStatusResponse> {
+  // Static method for sync status - doesn't need base URL since it uses dedicated sync API
+  static async getSyncStatus(syncId: string, userToken: string): Promise<SyncStatusResponse> {
     try {
       console.log('Getting sync status for syncId:', syncId);
       
+      // Use the dedicated Paragon Sync API endpoint as per documentation
+      // https://docs.useparagon.com/managed-sync/api/get-sync-status
       const response = await fetch(`https://sync.useparagon.com/api/syncs/${syncId}`, {
         method: 'GET',
         headers: {
