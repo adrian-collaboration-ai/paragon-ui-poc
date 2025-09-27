@@ -22,11 +22,6 @@ import { IntegrationInstallFlowForm } from '@/components/feature/integration/int
 import { ActionButton } from './components/action-button';
 import { WorkflowSection } from './components/workflows';
 import { ErrorMessage } from '../error-message';
-import { GoogleDriveFilePicker } from '../google-drive-file-picker';
-import { useParagonSync, useUserContext } from '@/lib/hooks';
-import { SyncStatusCard } from '@/components/feature/sync-status-card';
-import { getAppConfig } from '@/lib/config';
-import { ParagonService } from '@/lib/paragon-service';
 
 const globalInstallationErrors = new Set<InstallFlowError['name']>([
   'OAuthBlockedError',
@@ -49,8 +44,6 @@ export function IntegrationModal(props: Props) {
   const { data: integrationConfig, isLoading } = useIntegrationConfig(
     props.integration,
   );
-  const { syncs, configureSync, isConfiguring, configureError } = useParagonSync();
-  const { userId, workspaceId } = useUserContext();
   const [showFlowForm, setShowFlowForm] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [tab, setTab] = useState<'overview' | 'configuration' | (string & {})>(
@@ -207,65 +200,11 @@ export function IntegrationModal(props: Props) {
                   <WorkflowSection integration={props.integration} />
                   {props.integration === 'googledrive' && (
                     <div className="space-y-4">
-                      <GoogleDriveFilePicker 
-                        onFileSelect={async (files) => {
-                          console.log('Files selected from Google Drive:', files);
-                          
-                          try {
-                            const config = getAppConfig();
-                            if (!config.success) {
-                              console.error('Configuration error:', config.error);
-                              return;
-                            }
-
-                            // Generate a user token for this sync operation
-                            const paragonService = new ParagonService(config.data.VITE_API_BASE_URL);
-                            const userToken = await paragonService.generateToken(config.data.VITE_PARAGON_USER_ID);
-
-                            console.log('User context:', { userId, workspaceId });
-                            console.log('Selected files:', files);
-
-                            // Configure sync for the selected folder/files
-                            const syncRequest = {
-                              workspaceId: workspaceId,
-                              userId: userId || config.data.VITE_PARAGON_USER_ID,
-                              integrationId: "googledrive",
-                              folderId: files[0]?.id || "root",
-                              webhookUrl: `${config.data.VITE_API_BASE_URL}/api/v1/webhooks/paragon/files`,
-                              userToken: userToken
-                            };
-                            
-                            console.log('Sync request:', syncRequest);
-                            configureSync(syncRequest);
-                          } catch (error) {
-                            console.error('Error configuring sync:', error);
-                          }
-                        }}
-                        // onCloseModal={() => props.onOpenChange(false)}
-                      />
-                      
-                      {/* Show sync status */}
-                      {syncs.filter(sync => sync.integration === 'googledrive').map(sync => (
-                        <SyncStatusCard key={sync.syncId} syncStatus={sync} />
-                      ))}
-                      
-                      {/* Show configuration error */}
-                      {configureError && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                          <p className="text-sm text-red-800">
-                            Error configuring sync: {configureError instanceof Error ? configureError.message : 'Unknown error'}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Show loading state */}
-                      {isConfiguring && (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                          <p className="text-sm text-blue-800">
-                            Configuring sync with Paragon...
-                          </p>
-                        </div>
-                      )}
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                        <p className="text-sm text-blue-800">
+                          Google Drive file picker and sync configuration is now available on the main integrations page.
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>

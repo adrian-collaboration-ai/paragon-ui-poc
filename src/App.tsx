@@ -9,7 +9,7 @@ import { ThemeProvider } from '@/lib/themes/theme-provider';
 import { IntegrationList } from '@/components/feature/integration/integration-list';
 import { IntegrationCard } from '@/components/feature/integration/integration-card';
 import { ErrorCard } from '@/components/ui/error-card';
-import { GoogleDriveManager } from '@/components/pages/google-drive-manager';
+// import { GoogleDriveManager } from '@/components/pages/custom-file-manager';
 
 export function App() {
   return (
@@ -23,7 +23,7 @@ export function App() {
                 <AuthenticatedApp />
               </div>
             } />
-            <Route path="/google-drive" element={<GoogleDriveManager />} />
+            {/* <Route path="/google-drive" element={<GoogleDriveManager />} /> */}
           </Routes>
         </div>
       </Router>

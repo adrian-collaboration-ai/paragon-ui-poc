@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { paragon } from '@useparagon/connect';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ParagonService, ConfigureSyncRequest, ConfigureSyncResponse } from './paragon-service';
 import { getAppConfig } from './config';
 import { v4 as uuidv4 } from 'uuid';
@@ -130,7 +130,16 @@ export interface SyncStatus {
 
 export function useParagonSync() {
   const [syncs, setSyncs] = useState<SyncStatus[]>([]);
+  const [userTokens, setUserTokens] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
+  
+  // Use refs to avoid stale closures in the polling interval
+  const syncsRef = useRef<SyncStatus[]>([]);
+  const userTokensRef = useRef<Record<string, string>>({});
+  
+  // Update refs when state changes
+  syncsRef.current = syncs;
+  userTokensRef.current = userTokens;
 
   const configureSync = useMutation({
     mutationFn: async (request: ConfigureSyncRequest): Promise<ConfigureSyncResponse> => {
@@ -154,6 +163,12 @@ export function useParagonSync() {
       
       setSyncs(prev => [...prev, newSync]);
       
+      // Store user token for polling
+      setUserTokens(prev => ({
+        ...prev,
+        [response.syncId]: request.userToken
+      }));
+      
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
@@ -173,6 +188,62 @@ export function useParagonSync() {
         : sync
     ));
   };
+
+  // Poll sync status every 30 seconds
+  useEffect(() => {
+    const pollSyncStatus = async () => {
+      const currentSyncs = syncsRef.current;
+      const currentTokens = userTokensRef.current;
+      
+      if (currentSyncs.length === 0) return;
+
+      try {
+        const config = getAppConfig();
+        if (!config.success) return;
+
+        const paragonService = new ParagonService(config.data.VITE_API_BASE_URL);
+
+        // Poll status for all active syncs
+        const statusPromises = currentSyncs.map(async (sync) => {
+          const userToken = currentTokens[sync.syncId];
+          if (!userToken) return null;
+
+          try {
+            const statusResponse = await paragonService.getSyncStatus(sync.syncId, userToken);
+            return {
+              syncId: sync.syncId,
+              status: statusResponse.status,
+              message: `Last synced: ${statusResponse.summary.lastSyncedAt ? new Date(statusResponse.summary.lastSyncedAt).toLocaleString() : 'Never'} | Records: ${statusResponse.summary.syncedRecordsCount}/${statusResponse.summary.totalRecords}`
+            };
+          } catch (error) {
+            console.error(`Failed to get status for sync ${sync.syncId}:`, error);
+            return {
+              syncId: sync.syncId,
+              status: 'ERRORED' as const,
+              message: 'Failed to fetch status'
+            };
+          }
+        });
+
+        const statusUpdates = await Promise.all(statusPromises);
+        
+        // Update sync statuses
+        statusUpdates.forEach(update => {
+          if (update) {
+            updateSyncStatus(update.syncId, update.status, update.message);
+          }
+        });
+
+      } catch (error) {
+        console.error('Error polling sync status:', error);
+      }
+    };
+
+    // Start polling every 30 seconds
+    const interval = setInterval(pollSyncStatus, 30000);
+
+    return () => clearInterval(interval);
+  }, []); // Empty dependency array - polling runs independently
 
   return {
     syncs,

@@ -13,6 +13,16 @@ export interface ConfigureSyncResponse {
   message?: string;
 }
 
+export interface SyncStatusResponse {
+  status: 'INITIALIZING' | 'ACTIVE' | 'IDLE' | 'DISABLED' | 'ERRORED';
+  summary: {
+    totalRecords: number;
+    syncedRecordsCount: number;
+    lastSyncedAt: string;
+    latestCursor: string;
+  };
+}
+
 export interface GenerateTokenResponse {
   token: string;
 }
@@ -87,6 +97,37 @@ export class ParagonService {
       return data;
     } catch (error) {
       console.error('Error configuring Paragon sync:', error);
+      throw error;
+    }
+  }
+
+  async getSyncStatus(syncId: string, userToken: string): Promise<SyncStatusResponse> {
+    try {
+      console.log('Getting sync status for syncId:', syncId);
+      
+      const response = await fetch(`https://sync.useparagon.com/api/syncs/${syncId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${userToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Get sync status failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`Failed to get sync status: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const data: SyncStatusResponse = await response.json();
+      console.log('Sync status retrieved:', data);
+      return data;
+    } catch (error) {
+      console.error('Error getting Paragon sync status:', error);
       throw error;
     }
   }
